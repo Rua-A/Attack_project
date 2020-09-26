@@ -156,9 +156,11 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClInclude Include="InjecteeDLL.h" />
+    <ClInclude Include="ReflectiveLoader.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="InjecteeDLL.cpp" />
+    <ClCompile Include="ReflectiveLoader.cpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

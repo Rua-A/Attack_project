@@ -12,7 +12,7 @@ BOOL WINAPI DllMain(HINSTANCE hinstDLL, DWORD dwReason, LPVOID lpReserved)
 			*(HMODULE*)lpReserved = hAppInstance;
 		break;
 	case DLL_PROCESS_ATTACH:
-		MessageBoxA(NULL, "Hello from DllMain!", "Reflective Dll Injection", MB_OK);
+		MessageBoxA(NULL, "Hello World!", "PPIAC Reflective Dll Injection by FAST", MB_OK);
 		break;
 	case DLL_PROCESS_DETACH:
 	case DLL_THREAD_ATTACH:

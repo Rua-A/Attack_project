@@ -18,9 +18,15 @@
     <ClInclude Include="InjecteeDLL.h">
       <Filter>헤더 파일</Filter>
     </ClInclude>
+    <ClInclude Include="ReflectiveLoader.h">
+      <Filter>헤더 파일</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="InjecteeDLL.cpp">
+      <Filter>소스 파일</Filter>
+    </ClCompile>
+    <ClCompile Include="ReflectiveLoader.cpp">
       <Filter>소스 파일</Filter>
     </ClCompile>
   </ItemGroup>

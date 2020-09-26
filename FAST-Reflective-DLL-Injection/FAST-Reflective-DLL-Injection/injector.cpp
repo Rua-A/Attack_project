@@ -16,15 +16,18 @@ int main(int argc, char *argv[])
 
 	FILE* fp = NULL;
 
-	if (argc != 4) {
-		printf("usage: %s <dll> <exported_function_name> <pid>\n", argv[0]);
+	if (argc != 5) {
+		printf("usage: %s <injection_method> <dll> <exported_function_name> <pid>\n", argv[0]);
 		printf("<exported_function_name>: Exported function name in DLL (function using __declspec(dllexport))\n");
+		printf("\ninjection_method list (kind of LoadRemoteLibraryR):\n");
+		printf("1. it uses CreateRemoteThread, VirtualAllocEx and WriteProcessMemory.\n");
+		printf("2. it uses CreateRemoteThread, CreateFileMappingA, MapViewOfFile and PNtMapViewOfSection.\n");
 		return 0;
 	}
 
-	const char* cpDllFile = argv[1], *exportedFuncName = argv[2];
-
-	dwProcessId = atoi(argv[3]);
+	int method = atoi(argv[1]);
+	const char* cpDllFile = argv[2], * exportedFuncName = argv[3];
+	dwProcessId = atoi(argv[4]);
 
 	fopen_s(&fp, cpDllFile, "rb");
 	if (fp == NULL) {
@@ -64,7 +67,16 @@ int main(int argc, char *argv[])
 		return 1;
 	}
 
-	hModule = LoadRemoteLibraryR(hProcess, lpBuffer, dwLength, NULL, exportedFuncName);
+	// using various method for alternative LoadLibrary API
+	switch (method) {
+	case 1:
+		hModule = LoadRemoteLibraryR(hProcess, lpBuffer, dwLength, NULL, exportedFuncName);
+		break;
+	case 2:
+		hModule = LoadRemoteLibraryR2(hProcess, lpBuffer, dwLength, NULL, exportedFuncName);
+		break;
+	}
+
 	if (hModule == NULL) {
 		printf("Error: cannot inject %s DLL file.\n", cpDllFile);
 		return 1;

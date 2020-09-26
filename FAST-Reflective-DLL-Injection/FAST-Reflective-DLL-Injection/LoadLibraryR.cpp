@@ -148,3 +148,65 @@ HANDLE WINAPI LoadRemoteLibraryR(HANDLE hProcess, LPVOID lpBuffer, DWORD dwLengt
 
 	return hThread;
 }
+
+
+// Global(static) variable for function pointer
+static NTSTATUS(*PNtMapViewOfSection)(
+	HANDLE          SectionHandle,
+	HANDLE          ProcessHandle,
+	PVOID* BaseAddress,
+	ULONG_PTR       ZeroBits,
+	SIZE_T          CommitSize,
+	PLARGE_INTEGER  SectionOffset,
+	PSIZE_T         ViewSize,
+	SECTION_INHERIT InheritDisposition,
+	ULONG           AllocationType,
+	ULONG           Win32Protect
+	);
+
+
+HANDLE WINAPI LoadRemoteLibraryR2(HANDLE hProcess, LPVOID lpBuffer, DWORD dwLength, LPVOID lpParameter, const char* exportedFuncName)
+{
+	HANDLE hThread = NULL;
+	HANDLE fm;
+	char* map_addr;
+	LPVOID lpMap = 0;
+	SIZE_T viewsize = 0;
+	DWORD dwReflectiveLoaderOffset = 0;
+	LPVOID lpRemoteLibraryBuffer = NULL;
+	LPTHREAD_START_ROUTINE lpReflectiveLoader = NULL;
+	DWORD dwThreadId = 0;
+
+	try
+	{
+		if (!hProcess || !lpBuffer || !dwLength)
+			return NULL;
+
+		PNtMapViewOfSection = (NTSTATUS(*)(HANDLE SectionHandle, HANDLE ProcessHandle, PVOID * BaseAddress, ULONG_PTR ZeroBits, SIZE_T CommitSize, PLARGE_INTEGER SectionOffset, PSIZE_T ViewSize, SECTION_INHERIT InheritDisposition, ULONG AllocationType, ULONG Win32Protect))GetProcAddress(GetModuleHandleA("ntdll.dll"), "NtMapViewOfSection");
+
+		fm = CreateFileMappingA(INVALID_HANDLE_VALUE, NULL, PAGE_EXECUTE_READWRITE, 0, dwLength, NULL);
+
+		// check if the library has a ReflectiveLoader
+		dwReflectiveLoaderOffset = GetReflectiveLoaderOffset(lpBuffer, exportedFuncName);
+		if (!dwReflectiveLoaderOffset)
+			return NULL;
+
+		map_addr = (char*)MapViewOfFile(fm, FILE_MAP_ALL_ACCESS, 0, 0, 0);
+		
+		memcpy(map_addr, lpBuffer, dwLength);
+
+		(*PNtMapViewOfSection)(fm, hProcess, &lpMap, 0, dwLength, nullptr, &viewsize, ViewUnmap, 0, PAGE_EXECUTE_READWRITE);
+
+		// add the offset to ReflectiveLoader() to the remote library address
+		lpReflectiveLoader = (LPTHREAD_START_ROUTINE)((ULONG_PTR)lpMap + dwReflectiveLoaderOffset);
+
+		// create a remote thread in the host process to call the ReflectiveLoader
+		hThread = CreateRemoteThread(hProcess, NULL, 1024 * 1024, lpReflectiveLoader, lpParameter, (DWORD)NULL, &dwThreadId);
+	}
+	catch (...)
+	{
+		hThread = NULL;
+	}
+
+	return hThread;
+}
