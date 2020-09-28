@@ -184,7 +184,13 @@ HANDLE WINAPI LoadRemoteLibraryR2(HANDLE hProcess, LPVOID lpBuffer, DWORD dwLeng
 
 		PNtMapViewOfSection = (NTSTATUS(*)(HANDLE SectionHandle, HANDLE ProcessHandle, PVOID * BaseAddress, ULONG_PTR ZeroBits, SIZE_T CommitSize, PLARGE_INTEGER SectionOffset, PSIZE_T ViewSize, SECTION_INHERIT InheritDisposition, ULONG AllocationType, ULONG Win32Protect))GetProcAddress(GetModuleHandleA("ntdll.dll"), "NtMapViewOfSection");
 
+		if (PNtMapViewOfSection == NULL)
+			return NULL;
+
 		fm = CreateFileMappingA(INVALID_HANDLE_VALUE, NULL, PAGE_EXECUTE_READWRITE, 0, dwLength, NULL);
+		
+		if (fm == NULL)
+			return NULL;
 
 		// check if the library has a ReflectiveLoader
 		dwReflectiveLoaderOffset = GetReflectiveLoaderOffset(lpBuffer, exportedFuncName);
@@ -193,6 +199,9 @@ HANDLE WINAPI LoadRemoteLibraryR2(HANDLE hProcess, LPVOID lpBuffer, DWORD dwLeng
 
 		map_addr = (char*)MapViewOfFile(fm, FILE_MAP_ALL_ACCESS, 0, 0, 0);
 		
+		if (map_addr == NULL)
+			return NULL;
+
 		memcpy(map_addr, lpBuffer, dwLength);
 
 		(*PNtMapViewOfSection)(fm, hProcess, &lpMap, 0, dwLength, nullptr, &viewsize, ViewUnmap, 0, PAGE_EXECUTE_READWRITE);
